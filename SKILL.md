@@ -97,7 +97,7 @@ description: |
 | 找链接、查最新动态、快速验证 | **Brave**（`web_search`），主力搜索工具 |
 | 读文章/博客/新闻/文档/类型不确定 | **`web_fetch`**，URL 拼接 `r.jina.ai` 或 `defuddle.md` 前缀 |
 | 读 API/JSON/RSS 等结构化数据 | **`web_fetch`**，直接请求原始 URL |
-| Brave 限流 / 结果不足 / 需多源综合 | **Tavily**（补充工具，见下方说明） |
+| 需内容摘录 / Brave 限流 / 需多源综合答案 / URL 抓取备选 | **Tavily**（见下方分工说明） |
 | 复杂网页、JS重、公众号文章、整站抓取 | **Firecrawl**（scrape / map / crawl） |
 | 复杂网页抓取失败、需要点击/翻页/弹窗等交互操作 | **Firecrawl browser** |
 | 推文/X 内容 | `web_fetch`，URL 拼 `r.jina.ai` 前缀 |
@@ -108,19 +108,33 @@ description: |
 
 ### Brave 与 Tavily 的分工
 
-**Brave 是主力**：用于实时链接发现、查最新动态、快速定位来源。
+两者定位不同，用于调研流程的不同阶段：
 
-**Brave 免费版限流为 1 req/s**，使用时需注意：
-- 每次调用 Brave 之间间隔至少 1 秒
-- 如果触发限流报错，立即切换到 Tavily 继续搜索，不要重试同一请求
+| | Brave | Tavily |
+|---|---|---|
+| **本质** | 搜索引擎入口，返回链接列表 | 为 AI agent 设计的研究工具，返回内容 |
+| **每条结果内容** | 标题 + URL + 短摘要（~100字符） | 标题 + URL + 长摘录（200–500字符） |
+| **AI 综合** | 无 | 有 `include_answer`，自动综合多源答案 |
+| **页面提取** | 无 | 有 `extract` 接口，可替代 web_fetch |
+| **实时性** | 强，适合新闻/最新动态 | 一般 |
+| **免费额度** | 2,000 次/月，限流 1 req/s | 1,000 credits/月 |
 
-**Tavily 是补充**，在以下场景启用：
-- Brave 触发限流
-- Brave 结果数量不足或质量太浅
-- 需要多来源综合摘要（Tavily 的 `search` 接口会自动聚合多篇内容）
-- 深度模式下跨多个信息维度并行搜索时，可 Brave + Tavily 并用提速
+**使用原则：Brave 扫描找链接，Tavily 研究要内容。**
 
-两者互为补充，不互相替代。Tavily 结果同样需要通过 `web_fetch` 抓取原文存档，不能只用摘要。
+Brave 额度是 Tavily 的两倍，优先用 Brave 做探索性搜索，把 Tavily 留给真正需要内容深度的查询。
+
+**何时用 Brave**：
+- 快速找链接、确认某个事实
+- 查最新新闻、实时动态
+- 初轮广泛扫描，收集候选 URL
+
+**何时用 Tavily**：
+- 需要摘录内容、不想 web_fetch 每篇（摘录够长时可直接存档）
+- 需要对某话题做多源综合（用 `include_answer`）
+- 某个 URL 用 web_fetch / Firecrawl 抓不到时，试 Tavily `extract`
+- Brave 触发限流（1 req/s）时立即切换，不要重试
+
+**注意**：Tavily 返回的摘录虽然比 Brave 长，但仍是摘录，不是全文。重要来源还是要 web_fetch 抓全文存入 `sources/`。
 
 ### 已有 URL 时的读取优先级
 
