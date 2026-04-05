@@ -98,8 +98,8 @@ description: |
 | 读文章/博客/新闻/文档/类型不确定 | **`web_fetch`**，URL 拼接 `r.jina.ai` 或 `defuddle.md` 前缀 |
 | 读 API/JSON/RSS 等结构化数据 | **`web_fetch`**，直接请求原始 URL |
 | 需内容摘录 / Brave 限流 / 需多源综合答案 / URL 抓取备选 | **Tavily**（见下方分工说明） |
-| 复杂网页、JS重、公众号文章、整站抓取 | **Firecrawl**（scrape / map / crawl） |
-| 复杂网页抓取失败、需要点击/翻页/弹窗等交互操作 | **Firecrawl browser** |
+| 复杂网页、JS重、公众号文章、整站抓取 | **`browser`**（OpenClaw 内置浏览器） |
+| 复杂网页抓取失败、需要点击/翻页/弹窗等交互操作 | **`browser`**（OpenClaw 内置浏览器） |
 | 推文/X 内容 | `web_fetch`，URL 拼 `r.jina.ai` 前缀 |
 
 > **`r.jina.ai` 和 `defuddle.md` 的本质**：它们是 URL 转换服务，不是独立工具。使用方式是把目标 URL 拼接到前缀后，再交给 `web_fetch` 请求，从而提取更干净的正文。
@@ -131,7 +131,7 @@ Brave 额度是 Tavily 的两倍，优先用 Brave 做探索性搜索，把 Tavi
 **何时用 Tavily**：
 - 需要摘录内容、不想 web_fetch 每篇（摘录够长时可直接存档）
 - 需要对某话题做多源综合（用 `include_answer`）
-- 某个 URL 用 web_fetch / Firecrawl 抓不到时，试 Tavily `extract`
+- 某个 URL 用 web_fetch / `browser` 抓不到时，试 Tavily `extract`
 - Brave 触发限流（1 req/s）时立即切换，不要重试
 
 **注意**：Tavily 返回的摘录虽然比 Brave 长，但仍是摘录，不是全文。重要来源还是要 web_fetch 抓全文存入 `sources/`。
@@ -142,16 +142,14 @@ Brave 额度是 Tavily 的两倍，优先用 Brave 做探索性搜索，把 Tavi
    → `web_fetch` + `r.jina.ai/{URL}`
    → `web_fetch` + `defuddle.md/{URL}`
    → `web_fetch` 直接请求原始 URL
-   → Firecrawl scrape
-   → Firecrawl browser
+   → `browser`
 
 2. **API/JSON/RSS 结构化数据**
    → `web_fetch` 直接请求原始 URL
-   → Firecrawl
+   → `browser`
 
 3. **公众号/复杂JS页面**
-   → Firecrawl scrape
-   → Firecrawl browser
+   → `browser`
 
 ### 搜索与抓取执行要点
 
@@ -159,10 +157,10 @@ Brave 额度是 Tavily 的两倍，优先用 Brave 做探索性搜索，把 Tavi
 - **先搜后抓**：先搜索找到 URL，不要盲猜链接。
 - **Brave 扩面**：用 Brave 快速收集 5–10 个候选链接，注意每次调用间隔 ≥1s。
 - **Tavily 补充**：Brave 限流或结果不足时，切换 Tavily；需要多来源综合摘要时主动使用。
-- **Google 兜底**：当 Brave/Tavily 结果不理想时，可以手动拼接 Google 搜索 URL，用 Firecrawl browser 打开，再从结果页提取链接。示例：
+- **Google 兜底**：当 Brave/Tavily 结果不理想时，可以手动拼接 Google 搜索 URL，用 `browser` 打开，再从结果页提取链接。示例：
   - `https://www.google.com/search?q=关键词+site:arxiv.org`
   - `https://www.google.com/search?q="公司名"+竞品分析`
-  - 用 Firecrawl browser 打开上述 URL → 从返回的页面内容中提取有价值的链接 → 再逐个抓取
+  - 用 `browser` 打开上述 URL → 从返回的页面内容中提取有价值的链接 → 再逐个抓取
 - **学术来源**：技术调研和趋势洞察时，主动搜索 arxiv.org、Google Scholar 等学术平台。可以通过 Brave 搜索 `site:arxiv.org 关键词`，或拼接 `https://arxiv.org/search/?query=关键词` 用 `web_fetch` 获取搜索结果页。
 - **多角度提问**：同一对象用不同关键词搜索——公司名+"评测"、+"定价"、+"竞争对手"、+`site:linkedin.com`、+"融资"、+"客户案例"……
 - **中英文双搜**：研究对象在国内运营时，中英文往往能拿到不同维度的信息。
@@ -217,7 +215,7 @@ Brave 额度是 Tavily 的两倍，优先用 Brave 做探索性搜索，把 Tavi
 # {文章标题或页面描述}
 
 - **来源 URL**：{原始链接}
-- **抓取方式**：{web_fetch + r.jina.ai / Firecrawl scrape / ...}
+- **抓取方式**：{web_fetch + r.jina.ai / browser / ...}
 - **抓取时间**：{日期}
 - **内容类型**：{新闻/官网/评测/招聘/论坛/...}
 
@@ -264,8 +262,8 @@ Brave 额度是 Tavily 的两倍，优先用 Brave 做探索性搜索，把 Tavi
 当来源失效或内容不足时，按以下顺序尝试：
 
 ### 内容抓取失败
-- `web_fetch` + `r.jina.ai` 前缀失败 → 换 `defuddle.md` 前缀 → `web_fetch` 直接请求原始 URL → Firecrawl scrape → Firecrawl browser
-- 公众号/复杂JS页面：直接从 Firecrawl scrape 开始 → Firecrawl browser
+- `web_fetch` + `r.jina.ai` 前缀失败 → 换 `defuddle.md` 前缀 → `web_fetch` 直接请求原始 URL → `browser`
+- 公众号/复杂JS页面：直接用 `browser`
 - 遇到付费墙 → 搜索缓存版本（Brave 里加 `cache:`），或寻找引用了该原文的摘要文章
 
 ### 信息缺口的间接信号
@@ -280,12 +278,12 @@ Brave 额度是 Tavily 的两倍，优先用 Brave 做探索性搜索，把 Tavi
 | 客户名单 | 官网案例页、新闻稿、客户 Logo 墙、G2 评价 |
 | 融资/营收 | Crunchbase、新闻中的 PitchBook 引用、官方融资公告 |
 | 战略/路线图 | 大会演讲、创始人采访、产品更新日志、近期招聘方向（透露未来重点） |
-| 国内公司信息 | 天眼查/企查查（直接搜这两个网站+公司名）、百度新闻、微信文章用 Firecrawl 抓取 |
+| 国内公司信息 | 天眼查/企查查（直接搜这两个网站+公司名）、百度新闻、微信文章用 `browser` 抓取 |
 
 ### 搜索引擎兜底
-当 Brave/Tavily 搜索结果不理想时，拼接 Google 搜索 URL 用 Firecrawl browser 打开：
+当 Brave/Tavily 搜索结果不理想时，拼接 Google 搜索 URL 用 `browser` 打开：
 - 拼接 URL：`https://www.google.com/search?q=你的关键词`（关键词需 URL 编码）
-- 用 Firecrawl browser 打开该 URL，获取搜索结果页内容
+- 用 `browser` 打开该 URL，获取搜索结果页内容
 - 从返回内容中提取有价值的链接，再逐个用常规方式抓取
 - 适合场景：Brave 结果太少、需要精确的 `site:` 限定搜索、需要特定时间范围的结果
 
@@ -409,4 +407,4 @@ Brave 额度是 Tavily 的两倍，优先用 Brave 做探索性搜索，把 Tavi
 - **每条信息标注来源**：有 URL 和日期的调研才有价值，没来源就是猜测。
 - **空白也是结论**：找不到的信息清晰标注，比沉默更有帮助。
 - **始终回应用户实际问题**：所有调研都要连接回用户真正要做的决策或问题。
-- **工具由轻到重**：先用轻量工具，必要时再升级到 Firecrawl / Tavily。
+- **工具由轻到重**：先用轻量工具（web_fetch + jina/defuddle），必要时再升级到 `browser` / Tavily。

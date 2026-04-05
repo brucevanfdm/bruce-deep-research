@@ -29,7 +29,7 @@
 
 ```
 1. 制定研究计划 → 明确核心问题和信息维度
-2. 工具选择策略 → Brave / Tavily / web_fetch / Firecrawl 按场景选用
+2. 工具选择策略 → Brave / Tavily / web_fetch / browser 按场景选用
 3. 分层搜索与素材沉淀 → 搜索结果和页面全文存入本地目录
 4. 信息受阻时的变通 → 多种降级策略和间接信号推断
 5. 质量反思与补救 → 完整性/时效性/可信度/客观性自查
@@ -55,7 +55,7 @@
 
 - **Brave Search** — 主力搜索引擎，找链接、查最新动态
 - **Tavily** — AI 研究工具，返回内容摘录和多源综合答案
-- **Firecrawl** — 复杂网页抓取（JS 重页面、公众号、整站）
+- **browser** — OpenClaw 内置浏览器，复杂网页抓取（JS 重页面、公众号、需交互操作）
 - **web_fetch** — 通用页面抓取，配合 `r.jina.ai` / `defuddle.md` 前缀提取正文
 
 ## 前置条件
@@ -64,7 +64,6 @@
 
 - **Brave Search** — 配置 API Key（[申请地址](https://brave.com/search/api/)）
 - **Tavily** — 配置 API Key（[申请地址](https://tavily.com/)）
-- **Firecrawl** — 安装并登录（[安装指南](https://github.com/mendableai/firecrawl)）
 
 ## 安装
 
@@ -100,7 +99,7 @@ bruce-deep-research/
 - **边搜边沉淀** — 每个有价值的来源立即存文件
 - **每条信息标注来源** — 有 URL 和日期才有价值
 - **空白也是结论** — 找不到的信息清晰标注，比沉默更有帮助
-- **工具由轻到重** — 先用 Brave/web_fetch，必要时再升级到 Firecrawl/Tavily
+- **工具由轻到重** — 先用 Brave/web_fetch，必要时再升级到 browser/Tavily
 
 ## License
 
