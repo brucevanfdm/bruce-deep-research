@@ -67,7 +67,11 @@
 
 ## 安装
 
-把本仓库地址发给你的 OpenClaw，说"安装这个 skill"即可。
+把以下地址发给你的 OpenClaw，说"安装这个 skill"即可：
+
+```
+https://github.com/bruc3van/bruce-deep-research
+```
 
 ## 使用方式
 
